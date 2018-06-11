@@ -2,8 +2,11 @@
 
 Analysis of different bacterials systems like the Type VI secretion system. Between two strains. 
 
+# Obtention of gene sequences involved in the type VI secretion system
 
 1. Identify the complete gene list of the system.
+          - Look at publication about components of the type VI secretion system (i.e. Type VI ss; Metzger et al., 2016; DOI: https://doi.org/10.1016/j.celrep.2016.03.092)
+          - Extract gene sequences by name quering (Uniprot https://www.uniprot.org/) or protein similarity in blastP (https://blast.ncbi.nlm.nih.gov/Blast.cgi?PAGE=Proteins) 
 
 2. Blast those genes in two strains.
 
@@ -23,3 +26,7 @@ Analysis of different bacterials systems like the Type VI secretion system. Betw
 
 4. Revise presence of all sequences and curate manually the coordinates and size of the genes.
 
+
+# Comparison of Type VI secretion system of two strains.
+
+Analysis made in R. shown in a R markdown tutorial
