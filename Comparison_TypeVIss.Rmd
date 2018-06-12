@@ -1,0 +1,153 @@
+---
+title: "Comparison of type VI secretion system between two strains"
+author: "IM"
+date: "June 11, 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy.opts=list(width.cutoff=65),tidy=TRUE,fig.pos = "!h")
+```
+
+## Comparative genomics as a tool to understand the evolution of bacterial systems.
+
+Identification of all components of the Type VI secretion system in two strains of Vibrio cholerae. The Type VI ss is organized in three different gene clusters.
+A main cluster, then two different auxiliar clusters.
+
+After identification of all the components, we proceeded for a SNP analysis of each gene in the system between the two strains.
+
+
+
+## Add libraries
+```{r ,warning=FALSE,message=FALSE}
+# Libraries
+#install.packages('genoPlotR')
+library('genoPlotR')
+library(RColorBrewer)
+library(tidyr)
+#install.packages('grid')
+library('ggplot2')
+library('stringr')
+library(grid)
+library(pheatmap)
+library(plyr)
+library(ape)
+library(ggtree)
+library(PopGenome)
+options(digits=2)
+library(RColorBrewer)
+library(classInt)
+library(ggpubr)
+library(corrplot)
+```
+
+
+## Components of the TypeVI secretion system
+
+After identification of the components on the two different strains, we compared the clusters between the two strains.
+
+
+## Main cluster 
+
+```{r}
+# Set working directory
+setwd('~/Documents/Melanie/TypeVISS_O395_A1552/Coordinates_blast/')
+###############################
+# import blast output xml
+filesToProcess <- dir(pattern = "*\\.xml$")  #files to pro# if event 3 merged
+filesToProcess<- filesToProcess[grep("Large",filesToProcess, invert=F)]  ##<- to modify
+
+listOfFiles <- lapply(filesToProcess, function(x) tryCatch(read.table(x, header = F, stringsAsFactors=F,sep = c('\t',',')),
+                                                           error= function (e) cbind.data.frame(V1="NA",V2="NA",V3="NA",
+                                                                                                V4="NA",V5="NA",V6="NA",
+                                                                                                V7=0,V8=0,V9="NA",
+                                                                                                V10="NA",V11="NA",V12="NA")))
+
+# Format of raw data .xml
+head(listOfFiles[[2]])
+colnam<-c("Gene","Chr","Identity","Length","MissMatch","Gap","QStart","Qend","Start","End","Eval","BitScore" )
+listOfFiles <- lapply(listOfFiles, setNames, nm=colnam)
+
+
+# prepare guide
+
+guid<-ldply(Map(cbind,iso=gsub("blast_LargeCluster_","",gsub(".xml","",filesToProcess) ),xmin=lapply(listOfFiles,function(x) min(x$Start)), xmax= lapply(listOfFiles,function(x) max(x$End))  ,stringsAsFactors=F) , data.frame)
+guid<-cbind.data.frame(guid,ymin=(1:length(guid$iso))-0.01,ymax=(1:length(guid$iso))+0.01)
+
+
+plotlines<-  ggplot(aes(xmin=xmin, xmax=xmax, ymin=ymin-0.001, ymax= ymax+0.001),data=guid)+ geom_rect() + scale_y_continuous(limits = c(0, 3)) + 
+  annotate("text", x = -2000, y = (1:length(unique(guid$.id))), label = unique(guid$.id))
+
+
+# CDS 
+listOfFiles<-lapply(listOfFiles, function (x) cbind.data.frame(Gene=x$Gene, Chr=x$Chr,Start=x$Start -min(x$Start)+1,End= x$End -min(x$Start)+1 ))
+df2<-NULL
+for (i in 1:length(listOfFiles)){
+  df2<- rbind.data.frame(df2,listOfFiles[[i]])
+}
+
+df2<-cbind.data.frame(df2,ISO=c(rep("A1552",length(listOfFiles[[1]][,1])),rep("O395",length(listOfFiles[[1]][,1]))),ymin=c(rep(1,length(listOfFiles[[1]][,1])),rep(2,length(listOfFiles[[1]][,1])))-0.05,ymax=c(rep(1,length(listOfFiles[[1]][,1])),rep(2,length(listOfFiles[[1]][,1])))+0.05)
+
+```
+
+### Table to use for ploting the two clusters
+```{r}
+head (df2)
+```
+
+### Linear comparison between the two strains
+```{r,fig.cap="Comparison of the main cluster of the TypeVI SS",out.extra = '',fig.pos="h", fig.align="center"}
+plotlines + geom_rect(aes(xmin=Start, xmax=End, ymin=ymin, ymax=ymax),data=df2,color = "black",
+                      fill="black", alpha=2/4) + annotate("text", x = df2$Start+500, y = df2$ymax+0.08, label =df2$Gene , angle = 45, hjust = 0) +
+  coord_cartesian(xlim = c(min(df2$Start)-3000, max(df2$End)+3000)) 
+```
+
+
+##  Analyse sequences SNP and Syn/Non-Syn modifications
+Before starting the SNP analysis, align the sequences in bash and put the resulting alignement in a new folder.
+
+```{r,warning=FALSE,message=FALSE}
+# In bash
+#for i in $(ls *A1552*.fa); do echo $i $(echo $i | sed 's/A1552/O395/' ); mkdir $(echo $i | cut -d'_' -f2); cat $i > $(echo $i | cut -d'_' -f2)/$(echo $i | cut -d'_' -f2).fa; cat $(echo $i | sed 's/A1552/O395/' ) >> $(echo $i | cut -d'_' -f2)/$(echo $i | cut -d'_' -f2).fa; clustalo -i $(echo $i | cut -d'_' -f2)/$(echo $i | cut -d'_' -f2).fa -o $(echo $i | cut -d'_' -f2)/$(echo $i | cut -d'_' -f2).fa --force ;  done#2. align 
+```
+
+## SNP and  Syn/Non-Syn analysis
+
+```{r,warning=FALSE,message=FALSE}
+
+dirs <- dir("~/Documents/Melanie/TypeVISS_O395_A1552/LargeCluster/", pattern="^VC")
+genes<-list()
+for (x in dirs) {
+  genes[[x]] <- readData(as.character(paste("~/Documents/Melanie/TypeVISS_O395_A1552/LargeCluster/",x,sep="")),
+                           include.unknown = F)
+}
+
+# get summary statistics
+genes_SNP<-unlist(lapply(genes, function(x) length(x@region.data@synonymous[[1]])))
+nbSites<-unlist(lapply(genes, function(x) get.sum.data(x)[,1]))
+Syno<-lapply(genes, function(x) x@region.data@synonymous[[1]])
+
+
+Syn<-unlist(lapply(Syno, function (x) length(x[x==TRUE])   ))
+NonSyn<-unlist(lapply(Syno, function (x) length(x[x!=TRUE])   ))
+
+SeqComp<-cbind.data.frame(Sites=nbSites,SNP=genes_SNP,Syn=Syn,NonSyn=NonSyn)
+```
+
+# Results
+```{r}
+SeqComp
+```
+
+
+Can repeat the same analysis on Auxiliar cluster 1 and 2. The analysis of SNP on single genes, can be done, by alligning the sequences and then placing them in a single folder.
+
+We can observe that the main cluster of Type VISS betwen the two strains is very similar. however there are some differences: VCA0114 and VCA0119 have different size between both strains. 
+
+VCA0110, VCA0111 and VCA0112 display more than 10 SNP's each, but only VCA0111 display 4 non-synonimous mutations. Suggesting that these three genes are less conserved than the other genes in the cluster. This difference could be the result of either genetic drift, or adaptive selection. Nevertheless, it is necessary to compare a higher number of strains to get biological insights about the conservation or divergenece of the different genes.
+
+
+
+
