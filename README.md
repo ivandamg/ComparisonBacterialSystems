@@ -29,4 +29,5 @@ Analysis of different bacterials systems like the Type VI secretion system. Betw
 
 # Comparison of Type VI secretion system of two strains.
 
-Analysis made in R. shown in a R markdown tutorial
+Analysis made in R. shown in a R markdown tutorial. 
+The analysis include gene comparison of different gene clusters, SNP analysis and Synonimous and Non-synonimous modifications.
