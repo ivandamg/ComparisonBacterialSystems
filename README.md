@@ -1,6 +1,6 @@
 # ComparisonBacterialSystems
 
-Analysis of different bacterials systems like the Type VI secretion system. Between two strains. 
+Analysis of the Type VI secretion system. Between two strains. 
 
 # Obtention of gene sequences involved in the type VI secretion system
 
