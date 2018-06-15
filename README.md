@@ -32,6 +32,6 @@ Analysis of the Type VI secretion system. Between two strains.
 Analysis made in R. shown in a R markdown tutorial. 
 The analysis include:
 
-  - gene comparison of different gene clusters
-  - SNP analysis (PopGenome R package)
-  - Analysis of Synonimous and Non-synonimous modifications (PopGenome R package)
+   - gene comparison of different gene clusters
+   - SNP analysis (PopGenome R package)
+   - Analysis of Synonimous and Non-synonimous modifications (PopGenome R package)
